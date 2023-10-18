@@ -4,12 +4,12 @@
 
 // PINS
 // relay pins
-const short R1_15W = 4;
-const short R2_25W = 5;
-const short R3_25W = 6;
+const short R1_15W = 12;
+const short R2_25W = 14;
+const short R3_25W = 27;
 // sensors pins
-const short DHT22_1_PIN = 2;
-const short DHT22_2_PIN = 8;
+const short DHT22_1_PIN = 19;
+const short DHT22_2_PIN = 18;
 
 // Sensors
 DHT temperatureSenserIn(DHT22_1_PIN, DHT22);  // (Pin, type)
@@ -48,6 +48,7 @@ void setup() {
   pinMode(R1_15W, OUTPUT);
   pinMode(R2_25W, OUTPUT);
   pinMode(R3_25W, OUTPUT);
+  Serial.begin(115200);
 
 
   // init componets
@@ -94,7 +95,7 @@ void loop() {
 
 
 void refreshData() {
-  humidityIntoIncubator = temperatureSenserIn.readhumidityIntoIncubator();
+  humidityIntoIncubator = temperatureSenserIn.readTemperature();
   temperatureIn = temperatureSenserIn.readTemperature();
   temperatureOut = temperatureSensorOut.readTemperature();
 }
@@ -102,7 +103,8 @@ void refreshData() {
 void regulationTemperature() {
   if (temperatureIn < 37.9) {
     if (lightLevel < maxLevelLight) {
-      changeLightLevel(lightLevel++);
+      short newLevel = lightLevel + 1;
+      changeLightLevel(newLevel);
       printData();
       delay(30000);
       refreshData();
@@ -111,7 +113,8 @@ void regulationTemperature() {
 
   } else if (temperatureIn > 37.9) {
     if (lightLevel > minLevelLight) {
-      changeLightLevel(lightLevel--);
+      short newLevel = lightLevel - 1;
+      changeLightLevel(newLevel);
       printData();
       delay(20000);
       refreshData();
@@ -144,7 +147,7 @@ void printData() {
   lcd.setCursor(0, 2);
   lcd.print("Humedad:  ");
   if (isnan(humidityIntoIncubator)) {
-    lcd.print("fallo :(")
+    lcd.print("fallo :(");
   } else {
     lcd.print(humidityIntoIncubator);
     lcd.print("%");
@@ -199,6 +202,8 @@ short getMaxLightLevel() {
 
 // switches the lights
 void changeLightLevel(short level) {
+  Serial.print("Level: ");
+  Serial.print(level);
   lightLevel = level;
 
   if (lightLevel == 0) {
