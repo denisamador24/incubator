@@ -27,8 +27,8 @@ float humidityIntoIncubator;
 // ligthLevel is for incunator don't get higth and low temperature during all of the day
 // the changeLightLevel level changes when the clime outdoor chenges
 short lightLevel = 1;
-short minLevelLight = 1;
-short maxLevelLight = 5;
+short minLevelLight = 0;
+short maxLevelLight = 3;
 
 
 // functions
@@ -73,15 +73,15 @@ void loop() {
     lcd.setCursor(0, 0);
     lcd.print("Fallo el Sensor");
 
-    changeLightLevel(2);
+    changeLightLevel(0);
     return;
   }
 
   // when the temperature sensor out incubator
   // the range of light level will not change
   if (isnan(temperatureOut)) {
-    minLevelLight = 1;
-    maxLevelLight = 5;
+    minLevelLight = 0;
+    maxLevelLight = 3;
   } else {
     minLevelLight = getMinLightLevel();
     maxLevelLight = getMaxLightLevel();
@@ -95,13 +95,13 @@ void loop() {
 
 
 void refreshData() {
-  humidityIntoIncubator = temperatureSenserIn.readTemperature();
+  humidityIntoIncubator = temperatureSenserIn.readHumidity();
   temperatureIn = temperatureSenserIn.readTemperature();
   temperatureOut = temperatureSensorOut.readTemperature();
 }
 
 void regulationTemperature() {
-  if (temperatureIn < 37.9) {
+  if (temperatureIn < 37.3) {
     if (lightLevel < maxLevelLight) {
       short newLevel = lightLevel + 1;
       changeLightLevel(newLevel);
@@ -111,7 +111,7 @@ void regulationTemperature() {
       printData();
     }
 
-  } else if (temperatureIn > 37.9) {
+  } else if (temperatureIn > 37.3) {
     if (lightLevel > minLevelLight) {
       short newLevel = lightLevel - 1;
       changeLightLevel(newLevel);
@@ -129,9 +129,11 @@ void printData() {
 
   // temperatureIn
   lcd.setCursor(0, 0);
-  lcd.print("Temp-in:  ");
+  lcd.print("Temp-in: ");
   lcd.print(temperatureIn);
   lcd.print("C");
+  lcd.print(" ");
+  lcd.print(humidityIntoIncubator);
 
   // temperatureOut
   lcd.setCursor(0, 1);
@@ -168,18 +170,22 @@ void printData() {
 // define the minimo range of light level
 short getMinLightLevel() {
 
-  if (temperatureOut < 25.5) {
-    return 3;
+  return 0;
 
-  } else if (temperatureOut <= 28.8) {
-    return 2;
+  // it's no necesary in a good box of incubator
+  
+  // if (temperatureOut < 25.5) {
+  //   return 3;
 
-  } else if (temperatureOut <= 36) {
-    return 1;
+  // } else if (temperatureOut <= 28.8) {
+  //   return 2;
 
-  } else {
-    return 0;
-  }
+  // } else if (temperatureOut <= 32) {
+  //   return 1;
+
+  // } else {
+  //   return 0;
+  // }
 }
 
 
