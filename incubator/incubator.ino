@@ -1,6 +1,8 @@
 #include <Wire.h>
 #include <LiquidCrystal_I2C.h>
 #include <DHT.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
 
 // Pines
 const short R1_15W_PIN = 12;
@@ -17,9 +19,14 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 float temperatureIn;
 float humidityIntoIncubator;
 short lightLevel = 0; // Nivel mínimo al inicio
-const float INCUBATOR_TEMPERATURE = 37.8;
+const float INCUBATOR_TEMPERATURE = 38.2;
 const short MIN_LIGHT_LEVEL = 0; // Nivel mínimo permitido
 const short MAX_LIGHT_LEVEL = 3; // Nivel máximo permitido
+
+// WiFi
+const char* ssid = "NET1";
+const char* password = "1234567m";
+const char* serverUrl = "https://incubator-server.onrender.com/data";
 
 //functions
 void refreshData();
@@ -35,6 +42,7 @@ void setup() {
   Serial.begin(115200);
 
   temperatureSensorIn.begin();
+  WiFi.begin(ssid, password);
 
   lcd.init();
   lcd.backlight();
@@ -50,10 +58,15 @@ void loop() {
     handleSensorFailure();
     return;
   }
-
+  
   adjustLightLevel();
 
   printData();
+  if (WiFi.status() == WL_CONNECTED) {
+    sendDataToServer();
+  } else {
+    WiFi.begin(ssid, password);
+  }
   delay(5000);
 }
 
@@ -116,4 +129,27 @@ void changeLightLevel(short level) {
   // Controlar los dos relés para los tres niveles de luz
   digitalWrite(R1_15W_PIN, level == 1 || level == 3);
   digitalWrite(R2_25W_PIN, level >= 2);
+}
+
+void sendDataToServer() {
+  HTTPClient http;
+  http.begin(serverUrl);
+  http.addHeader("Content-Type", "application/json");
+
+  // Construir el cuerpo de la solicitud JSON
+  String jsonBody = "{\"temperatureIn\":" + String(temperatureIn) + ",";
+  jsonBody += "\"humidityIntoIncubator\":" + String(humidityIntoIncubator) + ",";
+  jsonBody += "\"lightLevel\":" + String(lightLevel) + "}";
+
+  // Enviar la solicitud POST
+  int httpResponseCode = http.PUT(jsonBody);
+  if (httpResponseCode > 0) {
+    Serial.print("Datos enviados al servidor, código de respuesta: ");
+    Serial.println(httpResponseCode);
+  } else {
+    Serial.print("Error al enviar datos al servidor, código de respuesta: ");
+    Serial.println(httpResponseCode);
+  }
+
+  http.end();
 }
